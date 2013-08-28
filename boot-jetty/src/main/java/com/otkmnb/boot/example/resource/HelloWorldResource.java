@@ -13,7 +13,7 @@ import com.otkmnb.boot.example.service.HelloWorldService;
 
 @Path("/hello")
 @Produces({MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
-@Consumes(MediaType.APPLICATION_JSON)
+@Consumes({MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
 public class HelloWorldResource {
     
     @Autowired

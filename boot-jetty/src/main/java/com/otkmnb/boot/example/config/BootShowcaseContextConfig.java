@@ -1,4 +1,4 @@
-package com.otkmnb.boot.example;
+package com.otkmnb.boot.example.config;
 
 import java.util.concurrent.TimeUnit;
 
@@ -7,23 +7,18 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
 
 import org.glassfish.jersey.servlet.ServletContainer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.embedded.EmbeddedServletContainerFactory;
 import org.springframework.boot.context.embedded.ServletContextInitializer;
 import org.springframework.boot.context.embedded.jetty.JettyEmbeddedServletContainerFactory;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-
-import com.otkmnb.boot.example.config.BootShowcaseJerseyConfig;
+import org.springframework.context.annotation.ImportResource;
 
 @Configuration
-@ComponentScan
-public class BootShowcase {
-
-    private static final Logger L = LoggerFactory.getLogger(BootShowcase.class);
-
+@ImportResource("classpath:Context.xml")
+//@ComponentScan
+public class BootShowcaseContextConfig {
+    
     private int port = 1234;
 
     @Bean
@@ -43,7 +38,6 @@ public class BootShowcase {
         public void onStartup(ServletContext container) throws ServletException {
             container.setInitParameter("contextConfigLocation", "classpath:Context.xml");
             ServletRegistration.Dynamic dispatcher = container.addServlet("jersey", ServletContainer.class);
-            L.debug(BootShowcaseJerseyConfig.class.getName());
             dispatcher.setInitParameter("javax.ws.rs.Application", BootShowcaseJerseyConfig.class.getName());
             dispatcher.addMapping("/v1.0/*");
         }
