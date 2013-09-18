@@ -1,22 +1,16 @@
 package com.otkmnb.boot.example.resource;
 
-import javax.ws.rs.Consumes;
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.otkmnb.boot.example.service.HelloWorldService;
 
 @Path("/hello")
-@Produces({MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
-@Consumes({MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
 public class HelloWorldResource {
     
-    @Autowired
+    @Inject
     private HelloWorldService service;
     
     @Path("/{id}")
