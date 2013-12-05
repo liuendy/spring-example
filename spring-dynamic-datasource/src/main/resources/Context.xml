@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:lang="http://www.springframework.org/schema/lang"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+    xmlns:mirage="http://www.springframework.org/schema/data/mirage"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/lang http://www.springframework.org/schema/lang/spring-lang-3.2.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+        http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+        http://www.springframework.org/schema/data/mirage http://www.springframework.org/schema/data/mirage/spring-mirage-1.0.xsd">
+
+  <context:property-placeholder location="classpath:Jdbc.properties"/>
+  
+  <aop:config>
+    <aop:pointcut id="servicePointcut" expression="execution(* com.otkmnb.sample.service.*.*(..))" />
+    <aop:advisor pointcut-ref="servicePointcut" advice-ref="transactionAdvice"/>
+  </aop:config>
+  
+  <tx:advice id="transactionAdvice" transaction-manager="transactionManager">
+    <tx:attributes>
+      <tx:method name="update*" isolation="READ_COMMITTED" 
+        propagation="REQUIRED"  rollback-for="java.lang.Throwable"/>
+      <tx:method name="create*" isolation="READ_COMMITTED" 
+        propagation="REQUIRED"  rollback-for="java.lang.Throwable"/>
+      <tx:method name="remove*" isolation="READ_COMMITTED" 
+        propagation="REQUIRED"  rollback-for="java.lang.Throwable"/>
+      <tx:method name="*" isolation="READ_COMMITTED" 
+        propagation="SUPPORTS"  rollback-for="java.lang.Throwable"/>
+    </tx:attributes>
+  </tx:advice>
+  
+  <tx:annotation-driven transaction-manager="transactionManager" />
+  
+  <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+   <property name="dataSource" ref="dataSource"/>
+  </bean>
+  
+  <bean id="abstractDataSource" destroy-method="close" class="org.apache.commons.dbcp.BasicDataSource">
+    <property name="driverClassName" value="${jdbc.driver}"/>
+    <property name="username" value="${jdbc.username}"/>
+    <property name="password" value="${jdbc.password}"/>
+  </bean>
+  
+  <bean id="japanDataSource" parent="abstractDataSource">
+    <property name="url" value="${jdbc.url.japan}"/>
+  </bean>
+  
+  <bean id="globalDataSource" parent="abstractDataSource">
+    <property name="url" value="${jdbc.url.global}"/>
+  </bean>
+  
+  <bean id="dataSource" class="com.otkmnb.sample.resolver.DynamicDatasourceResolver">
+    <property name="targetDataSources">
+      <map key-type="com.otkmnb.sample.resolver.DatasourceType">
+        <entry key="GLOBAL" value-ref="globalDataSource" />
+        <entry key="JAPAN" value-ref="japanDataSource" />
+      </map>
+    </property>
+    <property name="defaultTargetDataSource" ref="japanDataSource" />
+  </bean>
+  
+  <bean id="sqlManager" class="jp.sf.amateras.mirage.SqlManagerImpl">
+    <property name="dialect" ref="dialect" />
+    <property name="nameConverter" ref="nameConverter"/>
+    <property name="connectionProvider" ref="connectionProvider" />
+  </bean>
+
+  <bean id="nameConverter" class="jp.sf.amateras.mirage.naming.RailsLikeNameConverter"/>
+  <bean id="dialect" class="jp.sf.amateras.mirage.dialect.StandardDialect"/>
+  <bean id="connectionProvider" class="jp.sf.amateras.mirage.integration.spring.SpringConnectionProvider">
+    <property name="transactionManager" ref="transactionManager" />
+  </bean>
+  
+  <jdbc:initialize-database data-source="japanDataSource">
+    <jdbc:script location="classpath:DatasourceSetup_Japan.sql" encoding="UTF-8" />
+  </jdbc:initialize-database>
+  
+  <jdbc:initialize-database data-source="globalDataSource">
+    <jdbc:script location="classpath:DatasourceSetup_Global.sql" encoding="UTF-8" />
+  </jdbc:initialize-database>
+  
+  <mirage:repositories base-package="com.otkmnb.sample.repository" sql-manager-ref="sqlManager" />
+  <bean class="org.springframework.data.mirage.repository.support.MiragePersistenceExceptionTranslator" />
+  <bean class="org.springframework.data.mirage.repository.support.FieldPropertyExtractorInitializer"/>
+  <bean class="org.springframework.data.mirage.repository.support.EnableSLF4JBridgeHandler" />
+
+</beans>
